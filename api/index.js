@@ -1,8 +1,10 @@
 // Vercel API Handler for VeoForge
-// This file serves all API endpoints
+
+import OpenAIService from './services/openaiService.js';
+
+const openaiService = new OpenAIService();
 
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -12,7 +14,6 @@ export default async function handler(req, res) {
   }
   
   const path = req.url || '';
-  console.log('[API] Request:', path, req.method);
   
   // Health check
   if (path === '/api/health' || path === '/health') {
@@ -25,19 +26,6 @@ export default async function handler(req, res) {
   // Generate endpoint - POST /api/generate
   if (path.startsWith('/api/generate') && req.method === 'POST') {
     try {
-      // Check for API key
-      const apiKey = process.env.OPENAI_API_KEY;
-      console.log('[API] Has OpenAI key:', !!apiKey);
-      
-      if (!apiKey) {
-        return res.status(500).json({ 
-          error: 'OPENAI_API_KEY not configured on server' 
-        });
-      }
-      
-      const { default: OpenAIService } = await import('./services/openaiService.js');
-      const openaiService = new OpenAIService();
-      
       const { script, jsonFormat, settingMode, language, room, locations, ...params } = req.body;
       
       if (!script || script.trim().length < 50) {
@@ -69,13 +57,12 @@ export default async function handler(req, res) {
     }
   }
   
-  // Default response
   return res.status(200).json({ 
     status: 'ok',
     message: 'VeoForge API is running',
     endpoints: [
-      '/api/health - GET: Health check',
-      '/api/generate - POST: Generate video segments'
+      '/api/health - GET',
+      '/api/generate - POST'
     ]
   });
 }
