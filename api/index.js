@@ -1,8 +1,4 @@
-// Vercel API Handler for VeoForge
-
-import OpenAIService from './services/openaiService.js';
-
-const openaiService = new OpenAIService();
+// Vercel API Handler for VeoForge - Simple test version
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,33 +13,30 @@ export default async function handler(req, res) {
   
   // Health check
   if (path === '/api/health' || path === '/health') {
-    return res.status(200).json({ 
-      status: 'ok',
-      message: 'VeoForge API is running'
-    });
+    return res.status(200).json({ status: 'ok' });
   }
   
-  // Generate endpoint - POST /api/generate
+  // Generate endpoint
   if (path.startsWith('/api/generate') && req.method === 'POST') {
+    const { script } = req.body;
+    
+    if (!script || script.trim().length < 50) {
+      return res.status(400).json({ 
+        error: 'Script must be at least 50 characters long' 
+      });
+    }
+    
+    // Test import
     try {
-      const { script, jsonFormat, settingMode, language, room, locations, ...params } = req.body;
+      const { default: OpenAIService } = await import('./services/openaiService.js');
+      const service = new OpenAIService();
       
-      if (!script || script.trim().length < 50) {
-        return res.status(400).json({ 
-          error: 'Script must be at least 50 characters long' 
-        });
-      }
+      console.log('[API] Service created, calling generateSegments...');
       
-      console.log('[API] Generating segments...');
-      
-      const result = await openaiService.generateSegments({
+      const result = await service.generateSegments({
         script,
-        jsonFormat: jsonFormat || 'standard',
-        settingMode: settingMode || 'single',
-        language: language || 'en',
-        room: room || 'living room',
-        locations: locations || [],
-        ...params
+        jsonFormat: 'standard',
+        language: 'en'
       });
       
       return res.json({ 
@@ -52,17 +45,16 @@ export default async function handler(req, res) {
         count: result.segments.length
       });
     } catch (error) {
-      console.error('[API] Error:', error.message);
-      return res.status(500).json({ error: error.message });
+      console.error('[API] Error:', error);
+      return res.status(500).json({ 
+        error: error.message,
+        stack: error.stack
+      });
     }
   }
   
   return res.status(200).json({ 
     status: 'ok',
-    message: 'VeoForge API is running',
-    endpoints: [
-      '/api/health - GET',
-      '/api/generate - POST'
-    ]
+    endpoints: ['/api/health', '/api/generate']
   });
 }
