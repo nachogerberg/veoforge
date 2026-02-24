@@ -1,6 +1,7 @@
 // Vercel API Handler for VeoForge
 
 import openaiService from './services/openaiService.js';
+import veo3Service from './services/veo3Service.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,8 +19,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: 'ok' });
   }
   
-  // Generate endpoint
-  if (path.startsWith('/api/generate') && req.method === 'POST') {
+  // Generate segments from script
+  if (path === '/api/generate' && req.method === 'POST') {
     const { script, jsonFormat, settingMode, language, room, locations, ...params } = req.body;
     
     if (!script || script.trim().length < 50) {
@@ -29,8 +30,6 @@ export default async function handler(req, res) {
     }
     
     try {
-      console.log('[API] Calling generateSegments...');
-      
       const result = await openaiService.generateSegments({
         script,
         jsonFormat: jsonFormat || 'standard',
@@ -52,8 +51,52 @@ export default async function handler(req, res) {
     }
   }
   
+  // Generate videos with Veo3
+  if (path === '/api/generate-videos-veo3' && req.method === 'POST') {
+    const { segments, options } = req.body;
+    
+    if (!segments || !Array.isArray(segments) || segments.length === 0) {
+      return res.status(400).json({ 
+        error: 'No segments provided' 
+      });
+    }
+    
+    try {
+      console.log('[API] Generating videos with Veo3...');
+      
+      const results = await veo3Service.generateVideosWithVeo3(segments, options);
+      
+      return res.json({ 
+        success: true, 
+        videos: results,
+        count: results.length
+      });
+    } catch (error) {
+      console.error('[API] Veo3 Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+  
+  // Check Veo3 video status
+  if (path.startsWith('/api/video-status') && req.method === 'GET') {
+    const videoId = path.split('/').pop();
+    
+    try {
+      const status = await veo3Service.getVideoStatus(videoId);
+      return res.json(status);
+    } catch (error) {
+      console.error('[API] Status Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+  
   return res.status(200).json({ 
     status: 'ok',
-    endpoints: ['/api/health', '/api/generate']
+    endpoints: [
+      '/api/health',
+      '/api/generate - POST: Generate segments from script',
+      '/api/generate-videos-veo3 - POST: Generate videos with Veo3',
+      '/api/video-status/:id - GET: Check video status'
+    ]
   });
 }
