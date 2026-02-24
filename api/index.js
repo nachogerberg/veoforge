@@ -1,4 +1,6 @@
-// Vercel API Handler for VeoForge - Simple test version
+// Vercel API Handler for VeoForge
+
+import openaiService from './services/openaiService.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,7 +20,7 @@ export default async function handler(req, res) {
   
   // Generate endpoint
   if (path.startsWith('/api/generate') && req.method === 'POST') {
-    const { script } = req.body;
+    const { script, jsonFormat, settingMode, language, room, locations, ...params } = req.body;
     
     if (!script || script.trim().length < 50) {
       return res.status(400).json({ 
@@ -26,17 +28,17 @@ export default async function handler(req, res) {
       });
     }
     
-    // Test import
     try {
-      const { default: OpenAIService } = await import('./services/openaiService.js');
-      const service = new OpenAIService();
+      console.log('[API] Calling generateSegments...');
       
-      console.log('[API] Service created, calling generateSegments...');
-      
-      const result = await service.generateSegments({
+      const result = await openaiService.generateSegments({
         script,
-        jsonFormat: 'standard',
-        language: 'en'
+        jsonFormat: jsonFormat || 'standard',
+        settingMode: settingMode || 'single',
+        language: language || 'en',
+        room: room || 'living room',
+        locations: locations || [],
+        ...params
       });
       
       return res.json({ 
@@ -45,11 +47,8 @@ export default async function handler(req, res) {
         count: result.segments.length
       });
     } catch (error) {
-      console.error('[API] Error:', error);
-      return res.status(500).json({ 
-        error: error.message,
-        stack: error.stack
-      });
+      console.error('[API] Error:', error.message);
+      return res.status(500).json({ error: error.message });
     }
   }
   
