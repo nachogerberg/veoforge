@@ -1,0 +1,17 @@
+{
+  "name": "veoforge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Build not needed for API'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@google-cloud/vertexai": "^1.8.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0"
+  }
+}
