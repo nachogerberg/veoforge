@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   }
   
   const path = req.url || '';
+  console.log('[API] Request:', path, req.method);
   
   // Health check
   if (path === '/api/health' || path === '/health') {
@@ -23,11 +24,20 @@ export default async function handler(req, res) {
   
   // Generate endpoint - POST /api/generate
   if (path.startsWith('/api/generate') && req.method === 'POST') {
-    // Import dynamically to avoid issues
-    const { default: OpenAIService } = await import('./services/openaiService.js');
-    const openaiService = new OpenAIService();
-    
     try {
+      // Check for API key
+      const apiKey = process.env.OPENAI_API_KEY;
+      console.log('[API] Has OpenAI key:', !!apiKey);
+      
+      if (!apiKey) {
+        return res.status(500).json({ 
+          error: 'OPENAI_API_KEY not configured on server' 
+        });
+      }
+      
+      const { default: OpenAIService } = await import('./services/openaiService.js');
+      const openaiService = new OpenAIService();
+      
       const { script, jsonFormat, settingMode, language, room, locations, ...params } = req.body;
       
       if (!script || script.trim().length < 50) {
@@ -54,7 +64,7 @@ export default async function handler(req, res) {
         count: result.segments.length
       });
     } catch (error) {
-      console.error('[API] Error:', error);
+      console.error('[API] Error:', error.message);
       return res.status(500).json({ error: error.message });
     }
   }
