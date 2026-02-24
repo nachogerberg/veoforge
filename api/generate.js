@@ -1,17 +1,19 @@
-import express from 'express';
-
-const app = express();
-app.use(express.json());
-
-// Import services
 import OpenAIService from '../services/openaiService.js';
 import Veo3Service from '../services/veo3Service.js';
 
 const openaiService = new OpenAIService();
 const veo3Service = new Veo3Service();
 
-// POST /api/generate
-app.post('/generate', async (req, res) => {
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   try {
     const { script, jsonFormat, settingMode, language, room, locations, ...params } = req.body;
     
@@ -20,6 +22,8 @@ app.post('/generate', async (req, res) => {
         error: 'Script must be at least 50 characters long' 
       });
     }
+    
+    console.log('[API] Generating segments for script:', script.substring(0, 50) + '...');
     
     const result = await openaiService.generateSegments({
       script,
@@ -31,11 +35,13 @@ app.post('/generate', async (req, res) => {
       ...params
     });
     
-    res.json({ success: true, segments: result.segments });
+    res.json({ 
+      success: true, 
+      segments: result.segments,
+      count: result.segments.length
+    });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('[API] Error:', error);
     res.status(500).json({ error: error.message });
   }
-});
-
-export default app;
+}
