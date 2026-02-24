@@ -1,8 +1,5 @@
-import OpenAIService from './services/openaiService.js';
-import Veo3Service from './services/veo3Service.js';
-
-const openaiService = new OpenAIService();
-const veo3Service = new Veo3Service();
+// Vercel API Handler for VeoForge
+// This file serves all API endpoints
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -16,7 +13,7 @@ export default async function handler(req, res) {
   
   const path = req.url || '';
   
-  // /api/health
+  // Health check
   if (path === '/api/health' || path === '/health') {
     return res.status(200).json({ 
       status: 'ok',
@@ -24,8 +21,12 @@ export default async function handler(req, res) {
     });
   }
   
-  // /api/generate
+  // Generate endpoint - POST /api/generate
   if (path.startsWith('/api/generate') && req.method === 'POST') {
+    // Import dynamically to avoid issues
+    const { default: OpenAIService } = await import('./services/openaiService.js');
+    const openaiService = new OpenAIService();
+    
     try {
       const { script, jsonFormat, settingMode, language, room, locations, ...params } = req.body;
       
